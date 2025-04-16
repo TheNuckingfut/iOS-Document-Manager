@@ -1,181 +1,174 @@
 import Foundation
-import Combine
-
-/**
- * API Error Types
- *
- * Represents the various errors that can occur during network operations.
- * Each case provides specific information about what went wrong during
- * API interactions.
- */
-enum APIError: Error {
-    /// URL could not be constructed properly
-    case invalidURL
-    
-    /// Response from server was not valid HTTP response
-    case invalidResponse
-    
-    /// Network request failed with underlying error
-    case requestFailed(Error)
-    
-    /// JSON decoding failed with underlying error
-    case decodingFailed(Error)
-    
-    /// Server returned an error status code
-    case serverError(Int)
-    
-    /// Unknown or unspecified error
-    case unknown
-}
 
 /**
  * API Service
  *
- * Handles all network communication with the document server.
- * Implements RESTful API operations to create, read, update and delete documents.
- *
- * Uses Combine framework to provide asynchronous, publisher-based API.
- * All methods return publishers that emit either the requested data or an error.
+ * Handles network requests to the documents API.
+ * Responsible for fetching, creating, updating, and deleting documents on the server.
  */
 class APIService {
-    /// Shared instance of the API Service (Singleton)
     static let shared = APIService()
     
-    /// Base URL for the API endpoints
-    private let baseURL = "https://67ff5bb258f18d7209f0debe.mockapi.io"
+    /// Base URL for the documents API
+    private let baseURL = URL(string: "https://67ff5bb258f18d7209f0debe.mockapi.io/documents")!
     
-    /// JSON decoder configured for API responses
-    private let jsonDecoder: JSONDecoder
+    /// URLSession for making network requests
+    private let session: URLSession
     
-    /// JSON encoder configured for API requests
-    private let jsonEncoder: JSONEncoder
+    /// JSON decoder for parsing API responses
+    private let decoder = JSONDecoder()
+    
+    /// JSON encoder for creating request bodies
+    private let encoder = JSONEncoder()
+    
+    /// Errors that can occur when using the API service
+    enum APIError: Error {
+        case invalidURL
+        case requestFailed(Error)
+        case invalidResponse
+        case decodingFailed(Error)
+        case serverError(Int)
+        case networkUnavailable
+        case unknown
+    }
     
     /**
-     * Private initializer to enforce singleton pattern
+     * Initialize the API service
      *
-     * Configures JSON encoder and decoder with proper date handling
-     * and formatting options for API communication.
+     * Configures the URLSession for network requests.
      */
     private init() {
-        jsonDecoder = JSONDecoder()
-        jsonDecoder.dateDecodingStrategy = .iso8601
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30.0
+        session = URLSession(configuration: config)
         
-        jsonEncoder = JSONEncoder()
-        jsonEncoder.dateEncodingStrategy = .iso8601
-        jsonEncoder.outputFormatting = .prettyPrinted
-    }
-    
-    // MARK: - API Methods
-    
-    /**
-     * Fetches all documents from the server
-     *
-     * Performs a GET request to retrieve a list of all documents.
-     * The response is decoded into an array of DocumentDTO objects.
-     *
-     * - Returns: A publisher that emits either an array of DocumentDTO objects or an APIError
-     */
-    func fetchDocuments() -> AnyPublisher<[DocumentDTO], APIError> {
-        let endpoint = "/documents"
-        
-        guard let url = URL(string: baseURL + endpoint) else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
-        }
-        
-        return URLSession.shared.dataTaskPublisher(for: url)
-            .tryMap { data, response in
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw APIError.invalidResponse
-                }
-                
-                if (200..<300).contains(httpResponse.statusCode) {
-                    return data
-                } else {
-                    throw APIError.serverError(httpResponse.statusCode)
-                }
-            }
-            .decode(type: [DocumentDTO].self, decoder: jsonDecoder)
-            .mapError { error in
-                if let apiError = error as? APIError {
-                    return apiError
-                } else if error is DecodingError {
-                    return APIError.decodingFailed(error)
-                } else {
-                    return APIError.requestFailed(error)
-                }
-            }
-            .eraseToAnyPublisher()
+        // Configure date decoding strategy
+        decoder.dateDecodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = .iso8601
     }
     
     /**
-     * Creates a new document on the server
+     * Fetch all documents from the server
      *
-     * Performs a POST request to create a new document with the provided data.
-     * The document is encoded as JSON in the request body.
-     * On success, the server responds with the created document (including server-assigned fields).
+     * Retrieves the list of documents from the API.
      *
-     * - Parameter document: The DocumentDTO containing the document data to create
-     * - Returns: A publisher that emits either the created DocumentDTO or an APIError
+     * - Parameter completion: Closure called when the fetch completes
      */
-    func createDocument(document: DocumentDTO) -> AnyPublisher<DocumentDTO, APIError> {
-        let endpoint = "/documents"
-        
-        guard let url = URL(string: baseURL + endpoint) else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
+    func fetchDocuments(completion: @escaping (Result<[[String: Any]], APIError>) -> Void) {
+        guard NetworkMonitor.shared.isConnected else {
+            completion(.failure(.networkUnavailable))
+            return
         }
         
-        var request = URLRequest(url: url)
+        let task = session.dataTask(with: baseURL) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                completion(.failure(.serverError(statusCode)))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    completion(.success(json))
+                } else {
+                    completion(.failure(.invalidResponse))
+                }
+            } catch {
+                completion(.failure(.decodingFailed(error)))
+            }
+        }
+        
+        task.resume()
+    }
+    
+    /**
+     * Upload a new document to the server
+     *
+     * Creates a new document on the server.
+     *
+     * - Parameters:
+     *   - document: The document data to upload
+     *   - completion: Closure called when the upload completes
+     */
+    func uploadDocument(_ document: [String: Any], completion: @escaping (Result<[String: Any], APIError>) -> Void) {
+        guard NetworkMonitor.shared.isConnected else {
+            completion(.failure(.networkUnavailable))
+            return
+        }
+        
+        var request = URLRequest(url: baseURL)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
-            request.httpBody = try jsonEncoder.encode(document)
+            request.httpBody = try JSONSerialization.data(withJSONObject: document)
         } catch {
-            return Fail(error: APIError.requestFailed(error)).eraseToAnyPublisher()
+            completion(.failure(.requestFailed(error)))
+            return
         }
         
-        return URLSession.shared.dataTaskPublisher(for: request)
-            .tryMap { data, response in
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw APIError.invalidResponse
-                }
-                
-                if (200..<300).contains(httpResponse.statusCode) {
-                    return data
-                } else {
-                    throw APIError.serverError(httpResponse.statusCode)
-                }
+        let task = session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
             }
-            .decode(type: DocumentDTO.self, decoder: jsonDecoder)
-            .mapError { error in
-                if let apiError = error as? APIError {
-                    return apiError
-                } else if error is DecodingError {
-                    return APIError.decodingFailed(error)
-                } else {
-                    return APIError.requestFailed(error)
-                }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                completion(.failure(.serverError(statusCode)))
+                return
             }
-            .eraseToAnyPublisher()
+            
+            guard let data = data else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    completion(.success(json))
+                } else {
+                    completion(.failure(.invalidResponse))
+                }
+            } catch {
+                completion(.failure(.decodingFailed(error)))
+            }
+        }
+        
+        task.resume()
     }
     
     /**
-     * Updates an existing document on the server
+     * Update an existing document on the server
      *
-     * Performs a PUT request to update a document with the specified ID.
-     * The document data is encoded as JSON in the request body.
-     * On success, the server responds with the updated document.
+     * Updates a document with new data.
      *
      * - Parameters:
-     *   - id: The unique identifier of the document to update
-     *   - document: The DocumentDTO containing the updated document data
-     * - Returns: A publisher that emits either the updated DocumentDTO or an APIError
+     *   - documentId: The ID of the document to update
+     *   - document: The updated document data
+     *   - completion: Closure called when the update completes
      */
-    func updateDocument(id: String, document: DocumentDTO) -> AnyPublisher<DocumentDTO, APIError> {
-        let endpoint = "/documents/\(id)"
+    func updateDocument(documentId: String, document: [String: Any], completion: @escaping (Result<[String: Any], APIError>) -> Void) {
+        guard NetworkMonitor.shared.isConnected else {
+            completion(.failure(.networkUnavailable))
+            return
+        }
         
-        guard let url = URL(string: baseURL + endpoint) else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
+        guard let url = URL(string: "\(baseURL)/\(documentId)") else {
+            completion(.failure(.invalidURL))
+            return
         }
         
         var request = URLRequest(url: url)
@@ -183,75 +176,135 @@ class APIService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         
         do {
-            request.httpBody = try jsonEncoder.encode(document)
+            request.httpBody = try JSONSerialization.data(withJSONObject: document)
         } catch {
-            return Fail(error: APIError.requestFailed(error)).eraseToAnyPublisher()
+            completion(.failure(.requestFailed(error)))
+            return
         }
         
-        return URLSession.shared.dataTaskPublisher(for: request)
-            .tryMap { data, response in
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw APIError.invalidResponse
-                }
-                
-                if (200..<300).contains(httpResponse.statusCode) {
-                    return data
-                } else {
-                    throw APIError.serverError(httpResponse.statusCode)
-                }
+        let task = session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
             }
-            .decode(type: DocumentDTO.self, decoder: jsonDecoder)
-            .mapError { error in
-                if let apiError = error as? APIError {
-                    return apiError
-                } else if error is DecodingError {
-                    return APIError.decodingFailed(error)
-                } else {
-                    return APIError.requestFailed(error)
-                }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                completion(.failure(.serverError(statusCode)))
+                return
             }
-            .eraseToAnyPublisher()
+            
+            guard let data = data else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    completion(.success(json))
+                } else {
+                    completion(.failure(.invalidResponse))
+                }
+            } catch {
+                completion(.failure(.decodingFailed(error)))
+            }
+        }
+        
+        task.resume()
     }
     
     /**
-     * Deletes a document from the server
+     * Delete a document from the server
      *
-     * Performs a DELETE request to remove a document with the specified ID.
-     * Unlike other API methods, this one returns Void on success since
-     * deletion operations typically don't return content.
+     * Removes a document from the API.
      *
-     * - Parameter id: The unique identifier of the document to delete
-     * - Returns: A publisher that emits either Void (on success) or an APIError
+     * - Parameters:
+     *   - documentId: The ID of the document to delete
+     *   - completion: Closure called when the deletion completes
      */
-    func deleteDocument(id: String) -> AnyPublisher<Void, APIError> {
-        let endpoint = "/documents/\(id)"
+    func deleteDocument(documentId: String, completion: @escaping (Result<Bool, APIError>) -> Void) {
+        guard NetworkMonitor.shared.isConnected else {
+            completion(.failure(.networkUnavailable))
+            return
+        }
         
-        guard let url = URL(string: baseURL + endpoint) else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
+        guard let url = URL(string: "\(baseURL)/\(documentId)") else {
+            completion(.failure(.invalidURL))
+            return
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "DELETE"
         
-        return URLSession.shared.dataTaskPublisher(for: request)
-            .tryMap { _, response in
-                guard let httpResponse = response as? HTTPURLResponse else {
-                    throw APIError.invalidResponse
-                }
-                
-                if (200..<300).contains(httpResponse.statusCode) {
-                    return
-                } else {
-                    throw APIError.serverError(httpResponse.statusCode)
-                }
+        let task = session.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
             }
-            .mapError { error in
-                if let apiError = error as? APIError {
-                    return apiError
-                } else {
-                    return APIError.requestFailed(error)
-                }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                completion(.failure(.serverError(statusCode)))
+                return
             }
-            .eraseToAnyPublisher()
+            
+            completion(.success(true))
+        }
+        
+        task.resume()
+    }
+    
+    /**
+     * Fetch a single document from the server by ID
+     *
+     * Retrieves detailed information about a specific document.
+     *
+     * - Parameters:
+     *   - documentId: The ID of the document to fetch
+     *   - completion: Closure called when the fetch completes
+     */
+    func fetchDocument(documentId: String, completion: @escaping (Result<[String: Any], APIError>) -> Void) {
+        guard NetworkMonitor.shared.isConnected else {
+            completion(.failure(.networkUnavailable))
+            return
+        }
+        
+        guard let url = URL(string: "\(baseURL)/\(documentId)") else {
+            completion(.failure(.invalidURL))
+            return
+        }
+        
+        let task = session.dataTask(with: url) { data, response, error in
+            if let error = error {
+                completion(.failure(.requestFailed(error)))
+                return
+            }
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                completion(.failure(.serverError(statusCode)))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(.invalidResponse))
+                return
+            }
+            
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    completion(.success(json))
+                } else {
+                    completion(.failure(.invalidResponse))
+                }
+            } catch {
+                completion(.failure(.decodingFailed(error)))
+            }
+        }
+        
+        task.resume()
     }
 }

@@ -4,65 +4,57 @@ import CoreData
 /**
  * Core Data Stack
  *
- * Manages the Core Data stack for the application, providing access to the persistent
- * store coordinator, managed object model, and managed object contexts.
- *
- * Implemented as a singleton to ensure a single source of truth for data persistence.
+ * Manages the Core Data stack for persistent storage of documents.
+ * Provides access to the managed object context and saves data.
  */
 class CoreDataStack {
-    /// Shared instance of the CoreDataStack (Singleton)
     static let shared = CoreDataStack()
     
-    /// Private initializer to enforce singleton pattern
-    private init() {}
-    
-    // MARK: - Core Data Stack
-    
     /**
-     * The persistent container for the application.
+     * Persistent container for the 'DocumentManager' model
      *
-     * This property lazily loads the Core Data stack, including the
-     * model, coordinator, and context. It ensures the persistent store
-     * is properly configured and handles store loading errors.
+     * Manages the Core Data stack including the model, context, coordinator, and store.
      */
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "DocumentManager")
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
+        container.loadPersistentStores { (storeDescription, error) in
             if let error = error as NSError? {
-                // In a production app, we might want to handle this more gracefully
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
-        })
+        }
+        // For improved performance during batch operations
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
         return container
     }()
     
     /**
-     * The main managed object context associated with the main queue.
+     * Main view context for the app
      *
-     * This context should be used for UI-related operations and
-     * for fetching data to display in the app.
+     * Used for fetching and updating managed objects on the main thread.
      */
     var viewContext: NSManagedObjectContext {
         return persistentContainer.viewContext
     }
     
     /**
-     * Creates a new background context for operations that should not block the UI.
+     * Background context for operations that should not block the main thread
      *
-     * - Returns: A new NSManagedObjectContext associated with a private queue
+     * Used for operations like importing and syncing with the server.
+     *
+     * - Returns: A background managed object context
      */
-    func newBackgroundContext() -> NSManagedObjectContext {
-        return persistentContainer.newBackgroundContext()
+    func createBackgroundContext() -> NSManagedObjectContext {
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        return context
     }
     
-    // MARK: - Core Data Saving Support
-    
     /**
-     * Saves changes in the view context if there are any pending changes.
+     * Save changes to the view context if there are changes
      *
-     * This method should be called when appropriate to persist changes
-     * to the Core Data store, such as when the application enters background,
-     * before termination, or after completing a batch of changes.
+     * Attempts to save the managed object context and logs any errors.
      */
     func saveContext() {
         let context = persistentContainer.viewContext
@@ -71,62 +63,67 @@ class CoreDataStack {
                 try context.save()
             } catch {
                 let nserror = error as NSError
-                print("Unresolved error \(nserror), \(nserror.userInfo)")
+                print("Error saving context: \(nserror), \(nserror.userInfo)")
             }
         }
     }
     
-    // MARK: - Helper Methods
-    
     /**
-     * Fetches documents from the Core Data store with an optional predicate.
+     * Save changes to a specific context
      *
-     * - Parameter predicate: Optional NSPredicate to filter documents (nil returns all documents)
-     * - Returns: Array of DocumentEntity objects matching the predicate, sorted by update date (newest first)
+     * - Parameter context: The managed object context to save
+     * - Throws: An error if the save operation fails
      */
-    func fetchDocuments(withPredicate predicate: NSPredicate? = nil) -> [DocumentEntity] {
-        let fetchRequest: NSFetchRequest<DocumentEntity> = DocumentEntity.fetchRequest()
-        fetchRequest.predicate = predicate
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DocumentEntity.updatedAt, ascending: false)]
-        
-        do {
-            return try viewContext.fetch(fetchRequest)
-        } catch {
-            print("Failed to fetch documents: \(error)")
-            return []
+    func saveContext(_ context: NSManagedObjectContext) throws {
+        if context.hasChanges {
+            try context.save()
         }
     }
     
     /**
-     * Fetches a specific document by its unique identifier.
+     * Perform an operation on a background context
      *
-     * - Parameter id: The unique identifier of the document to fetch
-     * - Returns: The DocumentEntity if found, or nil if not found
+     * Executes an operation asynchronously on a background context
+     * and saves the context if needed.
+     *
+     * - Parameter operation: The operation to perform
      */
-    func fetchDocument(withID id: String) -> DocumentEntity? {
-        let fetchRequest: NSFetchRequest<DocumentEntity> = DocumentEntity.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", id)
-        fetchRequest.fetchLimit = 1
-        
-        do {
-            let results = try viewContext.fetch(fetchRequest)
-            return results.first
-        } catch {
-            print("Failed to fetch document: \(error)")
-            return nil
+    func performBackgroundTask(_ operation: @escaping (NSManagedObjectContext) -> Void) {
+        let context = createBackgroundContext()
+        context.perform {
+            operation(context)
+            
+            if context.hasChanges {
+                do {
+                    try context.save()
+                } catch {
+                    print("Error saving background context: \(error)")
+                }
+            }
         }
     }
     
     /**
-     * Deletes a document from the Core Data store.
+     * Reset the Core Data stack
      *
-     * - Parameter document: The DocumentEntity to delete
-     *
-     * This method immediately saves the context after deletion to ensure
-     * the change is persisted to the store.
+     * Useful for testing or when the data model has significantly changed.
      */
-    func deleteDocument(_ document: DocumentEntity) {
-        viewContext.delete(document)
-        saveContext()
+    func resetAllData() {
+        let persistentCoordinator = persistentContainer.persistentStoreCoordinator
+        
+        for store in persistentCoordinator.persistentStores {
+            do {
+                try persistentCoordinator.destroyPersistentStore(at: store.url!, ofType: store.type, options: nil)
+            } catch {
+                print("Error destroying persistent store: \(error)")
+            }
+        }
+        
+        // Recreate the persistent container
+        do {
+            try persistentCoordinator.addPersistentStore(ofType: NSSQLiteStoreType, configurationName: nil, at: persistentContainer.persistentStoreDescriptions.first?.url, options: nil)
+        } catch {
+            print("Error recreating persistent store: \(error)")
+        }
     }
 }

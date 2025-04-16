@@ -1,194 +1,223 @@
 import Foundation
 import Combine
-import CoreData
 
 /**
  * Document View Model
  *
- * This view model handles operations for a single document, providing a bridge between
- * the document entity in Core Data and the views that display or edit the document.
- *
- * It manages both local persistence and server synchronization for document operations,
- * and provides computed properties to help determine the current state of the document.
- *
- * Conforms to ObservableObject to integrate with SwiftUI's data flow system and
- * allow views to automatically update when the document changes.
+ * Represents a single document for display in the UI.
+ * Provides properties and methods for interacting with a document.
  */
-class DocumentViewModel: ObservableObject {
-    /// The document entity this view model manages, published for SwiftUI reactivity
-    @Published var document: DocumentEntity
+class DocumentViewModel: ObservableObject, Identifiable {
+    /// Unique identifier for the document
+    let id: String?
     
-    /// Set of cancellables to store and manage API request publishers
-    private var cancellables = Set<AnyCancellable>()
+    /// Title of the document
+    @Published var title: String
+    
+    /// Content of the document
+    @Published var content: String
+    
+    /// Creation date of the document
+    let createdAt: Date
+    
+    /// Last update date of the document
+    @Published var updatedAt: Date
+    
+    /// Whether the document is marked as a favorite
+    @Published var isFavorite: Bool
+    
+    /// Type of the document file (e.g., pdf, txt, doc)
+    let fileType: String
+    
+    /// Size of the document in bytes
+    @Published var size: Int64
+    
+    /// Array of tags associated with the document
+    @Published var tags: [String]
+    
+    /// The sync status of the document (0=synced, 1=needsUpload, 2=needsUpdate, 3=needsDelete)
+    @Published var syncStatus: Int16
+    
+    /// Whether the document is currently syncing
+    @Published var isSyncing: Bool = false
+    
+    /// The Core Data entity this view model represents
+    private let document: Document
     
     /**
-     * Initializes a new DocumentViewModel with a specific document entity
+     * Initialize from a Core Data Document entity
      *
-     * - Parameter document: The Core Data document entity to manage
+     * Creates a view model that represents a Document entity from Core Data.
+     *
+     * - Parameter document: The Core Data Document entity to represent
      */
-    init(document: DocumentEntity) {
+    init(document: Document) {
         self.document = document
-    }
-    
-    // MARK: - Document Status Helpers
-    
-    /**
-     * Indicates whether the document is currently synchronized with the server
-     *
-     * - Returns: True if the document is synced, false if it needs creation, update, or deletion
-     */
-    var isSynced: Bool {
-        document.syncStatus == DocumentSyncStatus.synced.rawValue
-    }
-    
-    /**
-     * Indicates whether the document needs to be synchronized with the server
-     *
-     * - Returns: True if the document needs to be created, updated, or deleted on the server
-     */
-    var needsSync: Bool {
-        document.syncStatus != DocumentSyncStatus.synced.rawValue
+        
+        self.id = document.id
+        self.title = document.title ?? "Untitled"
+        self.content = document.content ?? ""
+        self.createdAt = document.createdAt ?? Date()
+        self.updatedAt = document.updatedAt ?? Date()
+        self.isFavorite = document.isFavorite
+        self.fileType = document.fileType ?? "txt"
+        self.size = document.size
+        self.tags = document.tags ?? []
+        self.syncStatus = document.syncStatus
     }
     
     /**
-     * Provides a human-readable status text based on the document's sync status
+     * Update the underlying Document entity with current view model values
      *
-     * - Returns: A string describing the current synchronization status of the document
+     * Synchronizes changes from the view model back to the Core Data entity.
      */
-    var statusText: String {
-        switch document.syncStatus {
-        case DocumentSyncStatus.synced.rawValue:
+    func updateDocument() {
+        document.title = title
+        document.content = content
+        document.updatedAt = Date()
+        document.isFavorite = isFavorite
+        document.size = size
+        document.tags = tags
+        
+        // If already marked for upload, keep that status
+        if document.syncStatus != 1 {
+            document.syncStatus = 2 // Needs Update
+        }
+        
+        do {
+            try CoreDataStack.shared.saveContext(document.managedObjectContext!)
+        } catch {
+            print("Error updating document entity: \(error)")
+        }
+    }
+    
+    /**
+     * Get a formatted string representation of the document size
+     *
+     * Converts the size in bytes to a human-readable format.
+     *
+     * - Returns: A formatted string like "1.2 MB" or "450 KB"
+     */
+    var formattedSize: String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: size)
+    }
+    
+    /**
+     * Get a formatted string representation of the last update date
+     *
+     * Formats the date to a readable string like "June 15, 2025".
+     *
+     * - Returns: A formatted date string
+     */
+    var formattedUpdateDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: updatedAt)
+    }
+    
+    /**
+     * Get an icon name for the document based on its file type
+     *
+     * Maps common file types to SF Symbol icon names.
+     *
+     * - Returns: An SF Symbol icon name
+     */
+    var iconName: String {
+        switch fileType.lowercased() {
+        case "pdf":
+            return "doc.text.fill"
+        case "doc", "docx":
+            return "doc.fill"
+        case "xls", "xlsx":
+            return "tablecells.fill"
+        case "ppt", "pptx":
+            return "chart.bar.fill"
+        case "jpg", "jpeg", "png", "gif", "heic":
+            return "photo.fill"
+        case "mp3", "wav", "aac":
+            return "music.note"
+        case "mp4", "mov", "avi":
+            return "film.fill"
+        case "zip", "rar", "tar", "gz":
+            return "archivebox.fill"
+        default:
+            return "doc.text"
+        }
+    }
+    
+    /**
+     * Get a display-friendly file type name
+     *
+     * Converts file extensions to user-friendly names.
+     *
+     * - Returns: A user-friendly file type description
+     */
+    var fileTypeDisplayName: String {
+        switch fileType.lowercased() {
+        case "pdf":
+            return "PDF Document"
+        case "doc", "docx":
+            return "Word Document"
+        case "xls", "xlsx":
+            return "Excel Spreadsheet"
+        case "ppt", "pptx":
+            return "PowerPoint Presentation"
+        case "txt":
+            return "Text File"
+        case "jpg", "jpeg", "png", "gif", "heic":
+            return "Image"
+        case "mp3", "wav", "aac":
+            return "Audio File"
+        case "mp4", "mov", "avi":
+            return "Video File"
+        case "zip", "rar", "tar", "gz":
+            return "Archive"
+        default:
+            return fileType.uppercased()
+        }
+    }
+    
+    /**
+     * Get the sync status as a text description
+     *
+     * Converts the numeric sync status to a user-friendly string.
+     *
+     * - Returns: A description of the sync status
+     */
+    var syncStatusText: String {
+        switch syncStatus {
+        case 0:
             return "Synced"
-        case DocumentSyncStatus.needsCreate.rawValue:
+        case 1:
             return "Pending Upload"
-        case DocumentSyncStatus.needsUpdate.rawValue:
+        case 2:
             return "Pending Update"
-        case DocumentSyncStatus.needsDelete.rawValue:
+        case 3:
             return "Pending Deletion"
         default:
             return "Unknown"
         }
     }
     
-    // MARK: - Document Operations
-    
     /**
-     * Toggles the favorite status of the document
+     * Get a color representing the sync status
      *
-     * This method:
-     * 1. Toggles the isFavorite flag on the document
-     * 2. Updates the modification date
-     * 3. Marks the document for update on the server
-     * 4. Saves the changes to Core Data
-     * 5. Attempts to sync with the server if online
+     * Maps sync statuses to color names for UI display.
+     *
+     * - Returns: A color name
      */
-    func toggleFavorite() {
-        let context = CoreDataStack.shared.viewContext
-        document.isFavorite.toggle()
-        document.updatedAt = Date()
-        document.markForUpdate()
-        
-        // Save to Core Data
-        CoreDataStack.shared.saveContext()
-        
-        // Sync with server if online
-        if NetworkMonitor.shared.isConnected {
-            updateDocumentOnServer()
+    var syncStatusColor: String {
+        switch syncStatus {
+        case 0:
+            return "green"
+        case 1, 2, 3:
+            return "orange"
+        default:
+            return "gray"
         }
-    }
-    
-    /**
-     * Updates the name of the document
-     *
-     * This method:
-     * 1. Updates the document name
-     * 2. Updates the modification date
-     * 3. Marks the document for update on the server
-     * 4. Saves the changes to Core Data
-     * 5. Attempts to sync with the server if online
-     *
-     * - Parameter newName: The new name for the document
-     */
-    func updateName(_ newName: String) {
-        let context = CoreDataStack.shared.viewContext
-        document.name = newName
-        document.updatedAt = Date()
-        document.markForUpdate()
-        
-        // Save to Core Data
-        CoreDataStack.shared.saveContext()
-        
-        // Sync with server if online
-        if NetworkMonitor.shared.isConnected {
-            updateDocumentOnServer()
-        }
-    }
-    
-    /**
-     * Sends the updated document to the server
-     *
-     * This method is called automatically when changes are made and the device
-     * is online. It converts the document to a DTO and calls the API service
-     * to update it on the server. If successful, it updates the sync status.
-     */
-    func updateDocumentOnServer() {
-        guard let id = document.id else { return }
-        
-        // Convert to DTO
-        let documentDTO = document.toDTO()
-        
-        // Update on server
-        APIService.shared.updateDocument(id: id, document: documentDTO)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    // Update sync status in Core Data
-                    self.document.syncStatus = DocumentSyncStatus.synced.rawValue
-                    CoreDataStack.shared.saveContext()
-                case .failure(let error):
-                    print("Failed to update document: \(error.localizedDescription)")
-                    // Keep the sync status as needs update
-                }
-            }, receiveValue: { _ in })
-            .store(in: &cancellables)
-    }
-    
-    /**
-     * Deletes the document
-     *
-     * This method handles document deletion with different behavior based on connectivity:
-     * - If offline: Marks the document for deletion and stores it in Core Data
-     * - If online: Attempts to delete from the server first, then from Core Data if successful
-     *
-     * If the server deletion fails, the document is marked for deletion and will be
-     * synchronized when connectivity is restored.
-     */
-    func delete() {
-        guard let id = document.id else { return }
-        
-        // If offline, mark for deletion and wait for reconnection
-        if !NetworkMonitor.shared.isConnected {
-            document.markForDeletion()
-            CoreDataStack.shared.saveContext()
-            return
-        }
-        
-        // Delete from server
-        APIService.shared.deleteDocument(id: id)
-            .sink(receiveCompletion: { completion in
-                switch completion {
-                case .finished:
-                    // Delete from Core Data
-                    let context = CoreDataStack.shared.viewContext
-                    context.delete(self.document)
-                    CoreDataStack.shared.saveContext()
-                case .failure(let error):
-                    print("Failed to delete document: \(error.localizedDescription)")
-                    // Mark for deletion for later sync
-                    self.document.markForDeletion()
-                    CoreDataStack.shared.saveContext()
-                }
-            }, receiveValue: { _ in })
-            .store(in: &cancellables)
     }
 }

@@ -1,317 +1,301 @@
 import Foundation
 import Combine
 import CoreData
-import SwiftUI
 
 /**
  * Document List View Model
  *
- * This view model manages collections of documents and related operations.
- * It serves as the primary data source for document list views, handling:
- * - Loading documents from Core Data and the server
- * - Creating new documents
- * - Searching and filtering documents
- * - Managing favorites
- * - Handling network state changes
- *
- * The view model uses the MVVM pattern to separate UI concerns from business logic
- * and data access, making the views more declarative and testable.
+ * Manages the list of documents displayed in the UI.
+ * Handles fetching, filtering, and updating documents.
  */
 class DocumentListViewModel: ObservableObject {
-    // MARK: - Published Properties
+    /// Published array of documents for the view to display
+    @Published var documents: [DocumentViewModel] = []
     
-    /// All documents, sorted by update date (newest first)
-    @Published var documents: [DocumentEntity] = []
+    /// Published array of favorite documents
+    @Published var favoriteDocuments: [DocumentViewModel] = []
     
-    /// Only favorite documents, sorted by update date (newest first)
-    @Published var favoriteDocuments: [DocumentEntity] = []
+    /// Published loading state
+    @Published var isLoading: Bool = false
     
-    /// Loading state indicator for UI feedback
-    @Published var isLoading = false
-    
-    /// Error message to display if operations fail
+    /// Published error message if something goes wrong
     @Published var errorMessage: String?
     
-    /// Flag indicating whether an error has occurred
-    @Published var hasError = false
+    /// Published search text for filtering documents
+    @Published var searchText: String = ""
     
-    /// Current search text for filtering documents
-    @Published var searchText = ""
+    /// The API service for fetching documents from the server
+    private let apiService = APIService.shared
     
-    /// Flag indicating whether the document creation UI should be shown
-    @Published var isCreatingDocument = false
+    /// The sync service for managing online/offline sync
+    private let syncService = SyncService.shared
     
-    // MARK: - Document Creation State
-    
-    /// Name for the new document being created
-    @Published var newDocumentName = ""
-    
-    /// Favorite status for the new document being created
-    @Published var newDocumentIsFavorite = false
-    
-    // MARK: - Private Properties
-    
-    /// Core Data fetch request for all documents
-    private var documentsRequest: NSFetchRequest<DocumentEntity>
-    
-    /// Core Data fetch request for favorite documents
-    private var favoritesRequest: NSFetchRequest<DocumentEntity>
-    
-    /// Set of cancellables to store and manage API request publishers
+    /// Set of cancellables for managing subscriptions
     private var cancellables = Set<AnyCancellable>()
     
+    /// Filter predicate based on search text
+    private var filterPredicate: NSPredicate? {
+        if searchText.isEmpty {
+            return nil
+        }
+        
+        return NSPredicate(format: "title CONTAINS[cd] %@ OR content CONTAINS[cd] %@", searchText, searchText)
+    }
+    
     /**
-     * Initializes the Document List View Model
+     * Initialize the view model
      *
-     * Sets up Core Data fetch requests, loads initial document data,
-     * and configures network state monitoring for automatic synchronization.
+     * Sets up subscriptions to search text changes and loads documents.
      */
     init() {
-        // Setup Core Data fetch requests
-        documentsRequest = DocumentEntity.fetchRequest()
-        documentsRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DocumentEntity.updatedAt, ascending: false)]
+        // Subscribe to search text changes to update filtered documents
+        $searchText
+            .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.fetchDocuments()
+            }
+            .store(in: &cancellables)
         
-        favoritesRequest = DocumentEntity.fetchRequest()
-        favoritesRequest.sortDescriptors = [NSSortDescriptor(keyPath: \DocumentEntity.updatedAt, ascending: false)]
-        favoritesRequest.predicate = NSPredicate(format: "isFavorite == YES")
+        // Initial load of documents
+        fetchDocuments()
         
-        // Load initial data from Core Data
-        loadDocumentsFromCoreData()
-        
-        // Setup network monitoring for automatic sync
-        setupNetworkMonitoring()
+        // Subscribe to network status changes
+        NotificationCenter.default.publisher(for: .networkStatusDidChange)
+            .sink { [weak self] _ in
+                if NetworkMonitor.shared.isConnected {
+                    self?.syncDocuments()
+                }
+            }
+            .store(in: &cancellables)
     }
     
-    // MARK: - Data Loading
-    
     /**
-     * Loads documents from Core Data into the view model
+     * Fetch documents from Core Data
      *
-     * This method is the primary way to populate the documents and favoriteDocuments
-     * collections. It applies any active search filters and handles error reporting.
-     *
-     * Called at initialization, after data changes, and when search criteria change.
+     * Retrieves documents from local storage and updates the published document arrays.
      */
-    func loadDocumentsFromCoreData() {
+    func fetchDocuments() {
+        let fetchRequest: NSFetchRequest<Document> = Document.fetchRequest()
+        
+        // Apply search filter if there is search text
+        if let filterPredicate = filterPredicate {
+            fetchRequest.predicate = filterPredicate
+        }
+        
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Document.updatedAt, ascending: false)]
+        
         do {
-            let context = CoreDataStack.shared.viewContext
-            
-            // If we have a search term, add it to the predicate
-            if !searchText.isEmpty {
-                documentsRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@", searchText)
-                favoritesRequest.predicate = NSPredicate(format: "name CONTAINS[cd] %@ AND isFavorite == YES", searchText)
-            } else {
-                documentsRequest.predicate = nil
-                favoritesRequest.predicate = NSPredicate(format: "isFavorite == YES")
-            }
-            
-            // Fetch documents
-            documents = try context.fetch(documentsRequest)
-            favoriteDocuments = try context.fetch(favoritesRequest)
+            let documents = try CoreDataStack.shared.viewContext.fetch(fetchRequest)
+            self.documents = documents.map { DocumentViewModel(document: $0) }
+            self.favoriteDocuments = self.documents.filter { $0.isFavorite }
         } catch {
-            self.errorMessage = "Failed to load documents: \(error.localizedDescription)"
-            self.hasError = true
-            print("Failed to fetch documents: \(error)")
+            self.errorMessage = "Failed to fetch documents: \(error.localizedDescription)"
+            print("Error fetching documents: \(error)")
         }
     }
     
     /**
-     * Fetches documents from the remote server and updates local storage
+     * Synchronize documents with the server
      *
-     * This method connects to the server through the API service, fetches the latest
-     * documents, and updates the Core Data store using a smart sync strategy:
-     * - For existing documents: updates only if they're not pending synchronization
-     * - For new documents: creates new Core Data entities
-     *
-     * Handles loading states and error reporting for the UI.
+     * Fetches documents from the API and updates local storage.
+     * Also sends any pending local changes to the server.
      */
-    func fetchDocumentsFromServer() {
-        isLoading = true
-        errorMessage = nil
-        hasError = false
+    func syncDocuments() {
+        guard NetworkMonitor.shared.isConnected else {
+            return
+        }
         
-        APIService.shared.fetchDocuments()
-            .sink(receiveCompletion: { [weak self] completion in
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                switch completion {
-                case .finished:
-                    break
-                case .failure(let error):
-                    self.errorMessage = "Failed to fetch documents: \(error.localizedDescription)"
-                    self.hasError = true
-                    print("Error fetching documents: \(error)")
-                }
-            }, receiveValue: { [weak self] documents in
-                guard let self = self else { return }
-                
-                // Process received documents
-                let context = CoreDataStack.shared.viewContext
-                
-                // Sync strategy: Update existing, create new
-                for dto in documents {
-                    // Check if document already exists
-                    let fetchRequest: NSFetchRequest<DocumentEntity> = DocumentEntity.fetchRequest()
-                    fetchRequest.predicate = NSPredicate(format: "id == %@", dto.id)
+        isLoading = true
+        
+        // First, try to sync any pending changes
+        syncService.syncPendingChanges { [weak self] in
+            // Then, fetch the latest documents from the server
+            self?.apiService.fetchDocuments { result in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
                     
-                    do {
-                        let results = try context.fetch(fetchRequest)
-                        if let existingDocument = results.first {
-                            // Only update if the document is not marked for sync
-                            // This prevents overwriting local changes that haven't been synced yet
-                            if existingDocument.syncStatus == DocumentSyncStatus.synced.rawValue {
-                                existingDocument.update(from: dto)
-                            }
-                        } else {
-                            // Create new document entity for documents that don't exist locally
-                            _ = DocumentEntity.from(dto: dto, in: context)
-                        }
-                    } catch {
-                        print("Error syncing document \(dto.id): \(error)")
+                    switch result {
+                    case .success(let documents):
+                        self?.updateLocalDocuments(with: documents)
+                        self?.fetchDocuments() // Refresh the UI with latest data
+                    case .failure(let error):
+                        self?.errorMessage = "Failed to sync: \(error.localizedDescription)"
+                        print("Error syncing documents: \(error)")
                     }
                 }
-                
-                // Save changes to Core Data
-                CoreDataStack.shared.saveContext()
-                
-                // Reload documents from Core Data to refresh the UI
-                self.loadDocumentsFromCoreData()
-            })
-            .store(in: &cancellables)
-    }
-    
-    // MARK: - Document Operations
-    
-    /**
-     * Creates a new document
-     *
-     * This method creates a document both locally in Core Data and on the server.
-     * It handles both online and offline scenarios:
-     * - If online: Creates in Core Data and attempts to sync with the server
-     * - If offline: Creates in Core Data and marks for later creation on the server
-     *
-     * Validates that the document name is not empty before proceeding.
-     */
-    func createDocument() {
-        guard !newDocumentName.isEmpty else {
-            errorMessage = "Document name cannot be empty"
-            hasError = true
-            return
+            }
         }
-        
-        // Create document in Core Data
-        let context = CoreDataStack.shared.viewContext
-        let newDocument = DocumentEntity(context: context)
-        newDocument.id = UUID().uuidString
-        newDocument.name = newDocumentName
-        newDocument.isFavorite = newDocumentIsFavorite
-        newDocument.createdAt = Date()
-        newDocument.updatedAt = Date()
-        
-        // If offline, mark for creation later
-        if !NetworkMonitor.shared.isConnected {
-            newDocument.markForCreation()
-            CoreDataStack.shared.saveContext()
-            loadDocumentsFromCoreData()
-            resetNewDocumentFields()
-            return
-        }
-        
-        // Create on server
-        let dto = newDocument.toDTO()
-        APIService.shared.createDocument(document: dto)
-            .sink(receiveCompletion: { [weak self] completion in
-                guard let self = self else { return }
-                
-                switch completion {
-                case .finished:
-                    // Mark as synced
-                    newDocument.syncStatus = DocumentSyncStatus.synced.rawValue
-                case .failure(let error):
-                    print("Failed to create document on server: \(error)")
-                    // Mark for creation later
-                    newDocument.markForCreation()
-                }
-                
-                // Save and reload
-                CoreDataStack.shared.saveContext()
-                self.loadDocumentsFromCoreData()
-                self.resetNewDocumentFields()
-            }, receiveValue: { _ in })
-            .store(in: &cancellables)
     }
     
     /**
-     * Deletes a document
+     * Update local documents with data from the server
      *
-     * This method delegates the deletion to the DocumentViewModel, which handles
-     * the proper deletion logic based on connectivity status. After the deletion
-     * process is initiated, it reloads the document lists to reflect the change.
+     * Processes document data from the API and updates Core Data entities.
      *
-     * - Parameter document: The document entity to delete
+     * - Parameter documents: Array of document data from the server
      */
-    func deleteDocument(_ document: DocumentEntity) {
-        let viewModel = DocumentViewModel(document: document)
-        viewModel.delete()
-        
-        // Reload documents from Core Data
-        loadDocumentsFromCoreData()
-    }
-    
-    // MARK: - Helper Methods
-    
-    /**
-     * Resets the form fields for document creation
-     *
-     * Called after a document is created or when the creation is canceled.
-     */
-    private func resetNewDocumentFields() {
-        newDocumentName = ""
-        newDocumentIsFavorite = false
-        isCreatingDocument = false
-    }
-    
-    /**
-     * Sets up network state monitoring
-     *
-     * Observes changes in network connectivity and triggers synchronization
-     * when the device reconnects to the network. This ensures that any changes
-     * made while offline are sent to the server when connectivity is restored.
-     */
-    private func setupNetworkMonitoring() {
-        NetworkMonitor.shared.$isConnected
-            .dropFirst() // Skip initial value
-            .filter { $0 } // Only react to reconnections
-            .sink { [weak self] _ in
-                // When reconnected, sync pending changes
-                SyncService.shared.syncPendingChanges()
-                // Reload documents after sync
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    self?.loadDocumentsFromCoreData()
+    private func updateLocalDocuments(with documents: [[String: Any]]) {
+        CoreDataStack.shared.performBackgroundTask { context in
+            for documentData in documents {
+                if let id = documentData["id"] as? String {
+                    // Check if document already exists
+                    let fetchRequest: NSFetchRequest<Document> = Document.fetchRequest()
+                    fetchRequest.predicate = NSPredicate(format: "id == %@", id)
+                    
+                    do {
+                        let existingDocuments = try context.fetch(fetchRequest)
+                        
+                        let document: Document
+                        
+                        if let existingDocument = existingDocuments.first {
+                            // Only update if the server version is newer
+                            if let serverUpdatedAt = documentData["updatedAt"] as? Date,
+                               let localUpdatedAt = existingDocument.updatedAt,
+                               serverUpdatedAt > localUpdatedAt {
+                                document = existingDocument
+                            } else {
+                                continue // Skip this document as local version is newer
+                            }
+                        } else {
+                            // Create new document
+                            document = Document(context: context)
+                            document.id = id
+                        }
+                        
+                        // Update document properties
+                        document.title = documentData["title"] as? String
+                        document.content = documentData["content"] as? String
+                        document.createdAt = documentData["createdAt"] as? Date ?? Date()
+                        document.updatedAt = documentData["updatedAt"] as? Date ?? Date()
+                        document.fileType = documentData["fileType"] as? String
+                        document.size = documentData["size"] as? Int64 ?? 0
+                        document.tags = documentData["tags"] as? [String]
+                        document.syncStatus = 0 // Synced
+                    } catch {
+                        print("Error updating document \(id): \(error)")
+                    }
                 }
             }
-            .store(in: &cancellables)
-    }
-    
-    // MARK: - Search Functionality
-    
-    /**
-     * Executes a search based on the current searchText
-     *
-     * Reloads documents from Core Data with filtering applied.
-     */
-    func search() {
-        loadDocumentsFromCoreData()
+        }
     }
     
     /**
-     * Clears the current search
+     * Add a new document
      *
-     * Resets the search text and reloads all documents.
+     * Creates a new document and saves it to Core Data.
+     * Also schedules it for upload to the server.
+     *
+     * - Parameters:
+     *   - title: The title of the document
+     *   - content: The content of the document
+     *   - fileType: The type of file (e.g., "txt", "pdf")
      */
-    func clearSearch() {
-        searchText = ""
-        loadDocumentsFromCoreData()
+    func addDocument(title: String, content: String, fileType: String) {
+        let context = CoreDataStack.shared.viewContext
+        let document = Document(context: context)
+        
+        document.id = UUID().uuidString
+        document.title = title
+        document.content = content
+        document.fileType = fileType
+        document.createdAt = Date()
+        document.updatedAt = Date()
+        document.size = Int64(content.utf8.count)
+        document.isFavorite = false
+        document.syncStatus = 1 // Needs Upload
+        
+        do {
+            try context.save()
+            
+            // Refresh UI
+            fetchDocuments()
+            
+            // Try to sync if online
+            if NetworkMonitor.shared.isConnected {
+                syncService.uploadDocument(document)
+            }
+        } catch {
+            self.errorMessage = "Failed to save document: \(error.localizedDescription)"
+            print("Error saving document: \(error)")
+        }
     }
+    
+    /**
+     * Delete a document
+     *
+     * Removes a document from Core Data and schedules deletion on the server.
+     *
+     * - Parameter document: The view model of the document to delete
+     */
+    func deleteDocument(_ document: DocumentViewModel) {
+        guard let id = document.id else { return }
+        
+        let context = CoreDataStack.shared.viewContext
+        
+        // Find the Core Data entity
+        let fetchRequest: NSFetchRequest<Document> = Document.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", id)
+        
+        do {
+            if let documentEntity = try context.fetch(fetchRequest).first {
+                if NetworkMonitor.shared.isConnected {
+                    // If online, mark for deletion (will be synced)
+                    documentEntity.syncStatus = 3 // Needs Delete
+                    try context.save()
+                    syncService.deleteDocument(documentEntity)
+                } else {
+                    // If offline, mark for deletion for later sync
+                    documentEntity.syncStatus = 3 // Needs Delete
+                    try context.save()
+                }
+                
+                // Refresh UI
+                fetchDocuments()
+            }
+        } catch {
+            self.errorMessage = "Failed to delete document: \(error.localizedDescription)"
+            print("Error deleting document: \(error)")
+        }
+    }
+    
+    /**
+     * Toggle favorite status of a document
+     *
+     * Marks a document as favorite or removes favorite status.
+     *
+     * - Parameter document: The view model of the document to update
+     */
+    func toggleFavorite(_ document: DocumentViewModel) {
+        guard let id = document.id else { return }
+        
+        let context = CoreDataStack.shared.viewContext
+        
+        // Find the Core Data entity
+        let fetchRequest: NSFetchRequest<Document> = Document.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %@", id)
+        
+        do {
+            if let documentEntity = try context.fetch(fetchRequest).first {
+                documentEntity.isFavorite.toggle()
+                documentEntity.syncStatus = 2 // Needs Update
+                try context.save()
+                
+                // Refresh UI
+                fetchDocuments()
+                
+                // Sync change if online
+                if NetworkMonitor.shared.isConnected {
+                    syncService.updateDocument(documentEntity)
+                }
+            }
+        } catch {
+            self.errorMessage = "Failed to update favorite status: \(error.localizedDescription)"
+            print("Error updating favorite status: \(error)")
+        }
+    }
+}
+
+// MARK: - Notification Extensions
+extension Notification.Name {
+    static let networkStatusDidChange = Notification.Name("networkStatusDidChange")
 }

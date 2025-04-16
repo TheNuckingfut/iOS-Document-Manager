@@ -2,80 +2,70 @@ import UIKit
 import CoreData
 
 /**
- * Application Delegate
+ * App Delegate
  *
- * The main entry point for the application's lifecycle events. This class is responsible for:
- * - Setting up essential services at app launch
- * - Managing scene configurations
- * - Handling app termination and cleanup
- *
- * The AppDelegate works with the SceneDelegate to manage the app's lifecycle,
- * with AppDelegate handling app-wide events and SceneDelegate handling UI-specific events.
+ * Manages application lifecycle events and coordinates the app's core services.
+ * Initializes the Core Data stack and sets up the initial UI.
  */
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
     
     /**
-     * Called when the application has finished launching
+     * Application launch lifecycle method
      *
-     * This method initializes key application services that need to run for the entire
-     * lifecycle of the app, such as the network connectivity monitor.
-     *
-     * - Parameters:
-     *   - application: The singleton app object
-     *   - launchOptions: A dictionary indicating the reason the app was launched
-     * - Returns: True to allow the app to proceed with launching
+     * Initializes core services and configures third-party integrations.
+     * Also sets up the appearance for the UINavigationBar.
      */
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Start monitoring network connectivity
+        // Setup navigation bar appearance for the whole app
+        configureNavigationBarAppearance()
+        
+        // Start network monitoring
         NetworkMonitor.shared.startMonitoring()
+        
         return true
     }
-
-    // MARK: UISceneSession Lifecycle
     
     /**
-     * Configures a new UISceneSession
+     * Configure global navigation bar appearance
      *
-     * Called when a new scene session is being created, allowing the app to
-     * configure the session before it's connected to a scene object.
-     *
-     * - Parameters:
-     *   - application: The singleton app object
-     *   - connectingSceneSession: The new scene session
-     *   - options: Options for connecting the scene
-     * - Returns: The configuration to use for the scene
+     * Sets up a consistent look and feel for navigation bars across the app.
+     */
+    private func configureNavigationBarAppearance() {
+        // Create standard appearance object
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithDefaultBackground()
+        
+        // Apply to standard, compact, and scrollEdge appearances
+        UINavigationBar.appearance().standardAppearance = appearance
+        UINavigationBar.appearance().compactAppearance = appearance
+        UINavigationBar.appearance().scrollEdgeAppearance = appearance
+    }
+
+    // MARK: - UISceneSession Lifecycle
+    
+    /**
+     * Creates the scene configuration for a new scene session
      */
     func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
     }
-
+    
     /**
-     * Called when the user discards scene sessions
-     *
-     * This method can be used to release any resources associated with
-     * the discarded scenes, as they will not be returned to the app.
-     *
-     * - Parameters:
-     *   - application: The singleton app object
-     *   - sceneSessions: The set of scene sessions that were discarded
+     * Called when a scene session is being discarded
      */
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Handle cleanup for discarded scene sessions if needed
+        // Can be used to release resources when scenes are discarded
     }
     
     /**
-     * Called when the application is about to terminate
-     *
-     * This is the last chance to perform cleanup operations such as saving data
-     * and shutting down services. The app is terminated shortly after this method returns.
-     *
-     * - Parameter application: The singleton app object
+     * Clean up on application termination
      */
     func applicationWillTerminate(_ application: UIApplication) {
-        // Save any pending changes to Core Data
+        // Save changes in the Core Data context
         CoreDataStack.shared.saveContext()
         
-        // Stop the network monitoring service
+        // Stop network monitoring
         NetworkMonitor.shared.stopMonitoring()
     }
 }
