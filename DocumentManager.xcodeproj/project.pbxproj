@@ -1,0 +1,467 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F123456789ABCDEF0123456 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123451 /* AppDelegate.swift */; };
+		F123456789ABCDEF0123457 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123452 /* SceneDelegate.swift */; };
+		F123456789ABCDEF0123458 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123453 /* MainTabView.swift */; };
+		F123456789ABCDEF0123459 /* DocumentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123454 /* DocumentListView.swift */; };
+		F123456789ABCDEF012345A /* CreateDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123455 /* CreateDocumentView.swift */; };
+		F123456789ABCDEF012345B /* DocumentEditSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123456 /* DocumentEditSheet.swift */; };
+		F123456789ABCDEF012345C /* DocumentCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123457 /* DocumentCell.swift */; };
+		F123456789ABCDEF012345D /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123458 /* EmptyStateView.swift */; };
+		F123456789ABCDEF012345E /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123459 /* ErrorView.swift */; };
+		F123456789ABCDEF012345F /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345A /* LoadingView.swift */; };
+		F123456789ABCDEF0123460 /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345B /* ConfettiView.swift */; };
+		F123456789ABCDEF0123461 /* UploadAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345C /* UploadAnimationView.swift */; };
+		F123456789ABCDEF0123462 /* DocumentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345D /* DocumentListViewModel.swift */; };
+		F123456789ABCDEF0123463 /* DocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345E /* DocumentViewModel.swift */; };
+		F123456789ABCDEF0123464 /* Document.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF012345F /* Document.swift */; };
+		F123456789ABCDEF0123465 /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123460 /* CoreDataStack.swift */; };
+		F123456789ABCDEF0123466 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123461 /* APIService.swift */; };
+		F123456789ABCDEF0123467 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123462 /* NetworkMonitor.swift */; };
+		F123456789ABCDEF0123468 /* SyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123463 /* SyncService.swift */; };
+		F123456789ABCDEF0123469 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123464 /* Constants.swift */; };
+		F123456789ABCDEF012346A /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123465 /* Extensions.swift */; };
+		F123456789ABCDEF012346B /* DocumentManager.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = F123456789ABCDEF0123466 /* DocumentManager.xcdatamodeld */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F123456789ABCDEF0123450 /* DocumentManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DocumentManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F123456789ABCDEF0123451 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123452 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123453 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123454 /* DocumentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentListView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123455 /* CreateDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateDocumentView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123456 /* DocumentEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEditSheet.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123457 /* DocumentCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentCell.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123458 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123459 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345A /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345B /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345C /* UploadAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadAnimationView.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345D /* DocumentListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentListViewModel.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345E /* DocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewModel.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF012345F /* Document.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Document.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123460 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123461 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123462 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123463 /* SyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncService.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123464 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123465 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		F123456789ABCDEF0123467 /* DocumentManager.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = DocumentManager.xcdatamodel; sourceTree = "<group>"; };
+		F123456789ABCDEF0123468 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F123456789ABCDEF0123470 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F123456789ABCDEF0123471 = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF0123473 /* DocumentManager */,
+				F123456789ABCDEF0123472 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123472 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF0123450 /* DocumentManager.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123473 /* DocumentManager */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF0123474 /* Models */,
+				F123456789ABCDEF0123475 /* Views */,
+				F123456789ABCDEF0123476 /* ViewModels */,
+				F123456789ABCDEF0123477 /* Services */,
+				F123456789ABCDEF0123478 /* Utilities */,
+				F123456789ABCDEF0123451 /* AppDelegate.swift */,
+				F123456789ABCDEF0123452 /* SceneDelegate.swift */,
+				F123456789ABCDEF0123468 /* Info.plist */,
+			);
+			path = DocumentManager;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123474 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF012345F /* Document.swift */,
+				F123456789ABCDEF0123466 /* DocumentManager.xcdatamodeld */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123475 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF012347A /* Animations */,
+				F123456789ABCDEF0123453 /* MainTabView.swift */,
+				F123456789ABCDEF0123454 /* DocumentListView.swift */,
+				F123456789ABCDEF0123455 /* CreateDocumentView.swift */,
+				F123456789ABCDEF0123456 /* DocumentEditSheet.swift */,
+				F123456789ABCDEF0123457 /* DocumentCell.swift */,
+				F123456789ABCDEF0123458 /* EmptyStateView.swift */,
+				F123456789ABCDEF0123459 /* ErrorView.swift */,
+				F123456789ABCDEF012345A /* LoadingView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123476 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF012345D /* DocumentListViewModel.swift */,
+				F123456789ABCDEF012345E /* DocumentViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123477 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF0123460 /* CoreDataStack.swift */,
+				F123456789ABCDEF0123461 /* APIService.swift */,
+				F123456789ABCDEF0123462 /* NetworkMonitor.swift */,
+				F123456789ABCDEF0123463 /* SyncService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF0123478 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF0123464 /* Constants.swift */,
+				F123456789ABCDEF0123465 /* Extensions.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		F123456789ABCDEF012347A /* Animations */ = {
+			isa = PBXGroup;
+			children = (
+				F123456789ABCDEF012345B /* ConfettiView.swift */,
+				F123456789ABCDEF012345C /* UploadAnimationView.swift */,
+			);
+			path = Animations;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F123456789ABCDEF012347B /* DocumentManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F123456789ABCDEF012347C /* Build configuration list for PBXNativeTarget "DocumentManager" */;
+			buildPhases = (
+				F123456789ABCDEF012347D /* Sources */,
+				F123456789ABCDEF0123470 /* Frameworks */,
+				F123456789ABCDEF012347E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DocumentManager;
+			productName = DocumentManager;
+			productReference = F123456789ABCDEF0123450 /* DocumentManager.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F123456789ABCDEF012347F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1430;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					F123456789ABCDEF012347B = {
+						CreatedOnToolsVersion = 14.3;
+					};
+				};
+			};
+			buildConfigurationList = F123456789ABCDEF0123480 /* Build configuration list for PBXProject "DocumentManager" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = F123456789ABCDEF0123471;
+			productRefGroup = F123456789ABCDEF0123472 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F123456789ABCDEF012347B /* DocumentManager */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F123456789ABCDEF012347E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F123456789ABCDEF012347D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F123456789ABCDEF0123456 /* AppDelegate.swift in Sources */,
+				F123456789ABCDEF0123457 /* SceneDelegate.swift in Sources */,
+				F123456789ABCDEF0123458 /* MainTabView.swift in Sources */,
+				F123456789ABCDEF0123459 /* DocumentListView.swift in Sources */,
+				F123456789ABCDEF012345A /* CreateDocumentView.swift in Sources */,
+				F123456789ABCDEF012345B /* DocumentEditSheet.swift in Sources */,
+				F123456789ABCDEF012345C /* DocumentCell.swift in Sources */,
+				F123456789ABCDEF012345D /* EmptyStateView.swift in Sources */,
+				F123456789ABCDEF012345E /* ErrorView.swift in Sources */,
+				F123456789ABCDEF012345F /* LoadingView.swift in Sources */,
+				F123456789ABCDEF0123460 /* ConfettiView.swift in Sources */,
+				F123456789ABCDEF0123461 /* UploadAnimationView.swift in Sources */,
+				F123456789ABCDEF0123462 /* DocumentListViewModel.swift in Sources */,
+				F123456789ABCDEF0123463 /* DocumentViewModel.swift in Sources */,
+				F123456789ABCDEF0123464 /* Document.swift in Sources */,
+				F123456789ABCDEF0123465 /* CoreDataStack.swift in Sources */,
+				F123456789ABCDEF0123466 /* APIService.swift in Sources */,
+				F123456789ABCDEF0123467 /* NetworkMonitor.swift in Sources */,
+				F123456789ABCDEF0123468 /* SyncService.swift in Sources */,
+				F123456789ABCDEF0123469 /* Constants.swift in Sources */,
+				F123456789ABCDEF012346A /* Extensions.swift in Sources */,
+				F123456789ABCDEF012346B /* DocumentManager.xcdatamodeld in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F123456789ABCDEF0123481 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F123456789ABCDEF0123482 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F123456789ABCDEF0123483 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DocumentManager/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.DocumentManager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F123456789ABCDEF0123484 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DocumentManager/Info.plist;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.DocumentManager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F123456789ABCDEF012347C /* Build configuration list for PBXNativeTarget "DocumentManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F123456789ABCDEF0123483 /* Debug */,
+				F123456789ABCDEF0123484 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F123456789ABCDEF0123480 /* Build configuration list for PBXProject "DocumentManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F123456789ABCDEF0123481 /* Debug */,
+				F123456789ABCDEF0123482 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		F123456789ABCDEF0123466 /* DocumentManager.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				F123456789ABCDEF0123467 /* DocumentManager.xcdatamodel */,
+			);
+			currentVersion = F123456789ABCDEF0123467 /* DocumentManager.xcdatamodel */;
+			path = DocumentManager.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = F123456789ABCDEF012347F /* Project object */;
+}
