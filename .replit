@@ -27,8 +27,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "xcrun simctl bootstatus; swift run DocumentManager"
-waitForPort = 5000
+args = "swift DocumentManagerDemo.swift"
 
 [deployment]
-run = ["sh", "-c", "xcrun simctl bootstatus; swift run DocumentManager"]
+run = ["sh", "-c", "swift DocumentManagerDemo.swift"]
