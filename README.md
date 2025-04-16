@@ -2,46 +2,74 @@
 
 An advanced iOS document management application that provides seamless online and offline document handling with robust Core Data persistence and a clean MVVM architectural pattern.
 
-## Key Features
+## Features
 
-- **MVVM Architecture**: Clean separation of concerns with Models, Views, and ViewModels
-- **Core Data Integration**: Robust local persistence for document storage
-- **Online/Offline Sync**: Work offline and sync changes when connectivity returns
-- **Document CRUD Operations**: Create, read, update, and delete documents
+- **Document Management**: Create, view, edit, and delete documents
+- **Offline Support**: Full offline functionality with automatic synchronization when online
 - **Favorites**: Mark documents as favorites for quick access
-- **Search**: Find documents by name with real-time filtering
-- **Beautiful Animations**: Playful document upload animations with confetti celebration
-- **Dark Mode Support**: Full support for iOS light and dark modes
+- **File Types**: Support for various file types (TXT, DOCX, PDF, XLSX, PPTX)
+- **Modern UI**: Clean, intuitive interface with SwiftUI
+- **Dark Mode**: Full support for light and dark modes
+- **Animations**: Delightful animations including confetti effect for document uploads
 
-## Technical Highlights
+## Architecture
 
-- SwiftUI for modern UI implementation
-- Core Data for persistence
-- Combine framework for reactive programming
-- Network state monitoring
-- Smart synchronization strategies
-- Comprehensive error handling
+This application is built using the MVVM (Model-View-ViewModel) architecture pattern for clean separation of concerns:
 
-## Project Structure
+- **Models**: Core Data entities for documents
+- **Views**: SwiftUI views for the user interface
+- **ViewModels**: Business logic and data handling
 
-```
-DocumentManager/
-├── Models/               # Core data models and entities
-├── Services/             # CoreDataStack, API, Network, Sync services
-├── Utilities/            # Helper utilities and extensions
-├── ViewModels/           # MVVM view models
-└── Views/                # SwiftUI views including animations
-    └── Animations/       # Custom animations (ConfettiView, UploadAnimationView)
-```
+## Technical Details
+
+- **Swift**: Built with Swift 5.5+
+- **SwiftUI**: Modern declarative UI framework
+- **UIKit Integration**: Where needed for specialized components
+- **Core Data**: For robust local data persistence
+- **Network Layer**: URLSession-based API client for server communication
+- **Error Handling**: Comprehensive error handling throughout the app
+- **Dependency Injection**: For improved testability
+
+## Screens
+
+### Main Tabs
+
+- **Home**: View all documents with search and filtering
+- **Favorites**: Quick access to favorite documents
+
+### Document Functionality
+
+- **Document List**: Swipe actions for favorite/delete
+- **Document Detail**: View and edit document contents
+- **Create Document**: Form for adding new documents with file type selection
+- **Upload Animation**: Progress indication and celebration on completion
+
+## Core Components
+
+### Services
+
+- **CoreDataStack**: Manages persistent storage
+- **APIService**: Handles network requests
+- **SyncService**: Coordinates online/offline sync
+- **NetworkMonitor**: Tracks network connectivity status
+
+### View Models
+
+- **DocumentListViewModel**: Manages document collections
+- **DocumentViewModel**: Represents individual documents
 
 ## Getting Started
 
 1. Clone the repository
-2. Open the project in Xcode
-3. Build and run the project on an iOS simulator or device
+2. Open `DocumentManager.xcodeproj` in Xcode 13+
+3. Build and run on an iOS 15+ simulator or device
 
 ## Requirements
 
-- iOS 14.0+
-- Xcode 12.0+
-- Swift 5.3+
+- iOS 15.0+
+- Xcode 13.0+
+- Swift 5.5+
+
+## License
+
+This project is available under the MIT license.
